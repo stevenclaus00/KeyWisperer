@@ -254,6 +254,10 @@ async def init_default_commands():
         {"trigger": "select all", "action": "CTRL+A", "action_type": "key"},
         {"trigger": "copy", "action": "CTRL+C", "action_type": "key"},
         {"trigger": "paste", "action": "CTRL+V", "action_type": "key"},
+        {"trigger": "show my calendar", "action": "OPEN_CALENDAR", "action_type": "macro"},
+        {"trigger": "open calendar", "action": "OPEN_CALENDAR", "action_type": "macro"},
+        {"trigger": "show calendar", "action": "OPEN_CALENDAR", "action_type": "macro"},
+        {"trigger": "open outlook", "action": "OPEN_OUTLOOK_CALENDAR", "action_type": "macro"},
     ]
     
     created = []

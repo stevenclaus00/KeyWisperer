@@ -19,6 +19,9 @@ import asyncio
 import json
 import logging
 import socket
+import webbrowser
+import subprocess
+import platform
 from typing import Set
 
 try:
@@ -172,6 +175,24 @@ def handle_macro(macro_name: str):
             keyboard.press(Key.delete)
             keyboard.release(Key.delete)
             logger.info("Executed macro: SELECT_ALL_DELETE")
+        elif macro_name == 'OPEN_CALENDAR':
+            # Open Google Calendar in default browser
+            webbrowser.open('https://calendar.google.com')
+            logger.info("Executed macro: OPEN_CALENDAR")
+        elif macro_name == 'OPEN_OUTLOOK_CALENDAR':
+            # Open Outlook Calendar
+            webbrowser.open('https://outlook.live.com/calendar')
+            logger.info("Executed macro: OPEN_OUTLOOK_CALENDAR")
+        elif macro_name.startswith('OPEN_URL:'):
+            # Open custom URL
+            url = macro_name.split('OPEN_URL:', 1)[1]
+            webbrowser.open(url)
+            logger.info(f"Executed macro: OPEN_URL - {url}")
+        elif macro_name == 'OPEN_WINDOWS_CALENDAR':
+            # Open Windows Calendar app
+            if platform.system() == 'Windows':
+                subprocess.Popen(['start', 'outlookcal:'], shell=True)
+            logger.info("Executed macro: OPEN_WINDOWS_CALENDAR")
         else:
             logger.warning(f"Unknown macro: {macro_name}")
     except Exception as e:
