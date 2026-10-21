@@ -220,14 +220,142 @@ frontend:
         agent: "main"
         comment: "3 tabs: Voice, PC Connect, Settings with icons"
 
+  - task: "Profiles API (CRUD + Activate)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET/POST/PUT/DELETE /api/profiles, GET /api/profiles/active, PUT /api/profiles/{id}/activate - all tested manually. Default profile created on first request."
+
+  - task: "Transcription History API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET/POST/PUT/DELETE /api/history, DELETE /api/history (clear all). Word count auto-computed."
+
+  - task: "Custom Vocabulary in Transcription"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "POST /api/transcribe now accepts profile_id as Form field. Active profile's custom_vocabulary is joined as prompt for Whisper API."
+
+frontend:
+  - task: "Voice Screen - Profile Switcher Chip"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Profile chip in header showing active profile. Tapping opens bottom-sheet modal to switch profiles."
+
+  - task: "Voice Screen - Live Waveform"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "28 animated bars using React Native Animated. Bars animate during recording (teal) and processing (amber). Flatten when stopped."
+
+  - task: "Voice Screen - History Drawer"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Bottom sheet Modal with history list. Features: search, tap to expand, edit, copy, restore, delete."
+
+  - task: "Voice Screen - Export"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Export modal with 4 options: clipboard, share, .txt file, .md file. Uses expo-sharing for file export."
+
+  - task: "Voice Screen - Auto-save to History"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "When recording stops, accumulated session text is auto-saved to history via POST /api/history."
+
+  - task: "Smart Formatting (Client-side)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/utils/smartFormatting.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "applySmartFormatting() applies: auto-capitalize, number conversion, paragraph breaks, smart quotes. Applied per-profile settings."
+
+  - task: "Settings Screen - Profile Management"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/settings.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Profile cards with edit/delete/activate. ProfileEditModal for create/edit with all settings. Smart Formatting section shows active profile toggles."
+
 metadata:
   created_by: "main_agent"
-  version: "1.0"
-  test_sequence: 1
-  run_ui: false
+  version: "2.0"
+  test_sequence: 2
+  run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Profiles API (CRUD + Activate)"
+    - "Transcription History API"
+    - "Voice Screen - Profile Switcher Chip"
+    - "Voice Screen - History Drawer"
+    - "Voice Screen - Export"
+    - "Settings Screen - Profile Management"
+    - "Smart Formatting (Client-side)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -237,3 +365,5 @@ agent_communication:
     message: "MVP implementation complete. Backend has transcription API with OpenAI Whisper, voice commands CRUD, settings API, and WebSocket for PC connection. Frontend has 3-tab navigation with voice recording, PC connection setup, and settings management. PC server Python script also provided for users to run on their computers."
   - agent: "testing"
     message: "✅ BACKEND TESTING COMPLETE: All backend APIs tested successfully. Health Check (✅), Settings API GET/PUT (✅), Voice Commands CRUD (✅), Audio Transcription with OpenAI Whisper (✅), Connected PCs API (✅). All endpoints return correct responses and handle data properly. OpenAI STT integration working correctly. No critical issues found."
+  - agent: "main"
+    message: "Phase 1 Power-Up implemented. Backend: Profiles CRUD+activate, History CRUD, transcribe endpoint updated with profile_id/custom vocab prompt. Frontend: Profile switcher chip, live waveform (28 animated bars), history bottom sheet (search/edit/copy/delete/restore), export modal (clipboard/share/.txt/.md), smart formatting util, auto-save on recording stop. Settings screen now has full Profile management. Please test Voice screen UI, profile switching, history drawer, export, and settings profile management."

@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Record voice for AI transcription",
         "NSSpeechRecognitionUsageDescription": "Convert speech to text"
-      }
+      },
+      "bundleIdentifier": "com.emergent.voicekeyai.ykfy97"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +25,8 @@
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.INTERNET"
-      ]
+      ],
+      "package": "com.emergent.voicekeyai.ykfy97"
     },
     "web": {
       "bundler": "metro",

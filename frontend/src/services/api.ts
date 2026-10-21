@@ -2,13 +2,16 @@ import Constants from 'expo-constants';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://voicekey-ai.preview.emergentagent.com';
 
-interface TranscriptionResponse {
+// ─── Interfaces ───
+
+export interface TranscriptionResponse {
   text: string;
   success: boolean;
   error?: string;
+  history_id?: string;
 }
 
-interface VoiceCommand {
+export interface VoiceCommand {
   id: string;
   trigger: string;
   action: string;
@@ -16,7 +19,7 @@ interface VoiceCommand {
   enabled: boolean;
 }
 
-interface AppSettings {
+export interface AppSettings {
   id?: string;
   immediate_insertion: boolean;
   chunk_duration_ms: number;
@@ -24,6 +27,64 @@ interface AppSettings {
   auto_punctuation: boolean;
   pc_connection_enabled: boolean;
 }
+
+export interface Profile {
+  id: string;
+  name: string;
+  custom_vocabulary: string[];
+  immediate_insertion: boolean;
+  chunk_duration_ms: number;
+  language: string;
+  auto_punctuation: boolean;
+  pc_connection_enabled: boolean;
+  auto_capitalize: boolean;
+  paragraph_breaks: boolean;
+  number_formatting: boolean;
+  smart_quotes: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProfileCreate {
+  name: string;
+  custom_vocabulary?: string[];
+  immediate_insertion?: boolean;
+  chunk_duration_ms?: number;
+  language?: string;
+  auto_punctuation?: boolean;
+  pc_connection_enabled?: boolean;
+  auto_capitalize?: boolean;
+  paragraph_breaks?: boolean;
+  number_formatting?: boolean;
+  smart_quotes?: boolean;
+}
+
+export interface ProfileUpdate {
+  name?: string;
+  custom_vocabulary?: string[];
+  immediate_insertion?: boolean;
+  chunk_duration_ms?: number;
+  language?: string;
+  auto_punctuation?: boolean;
+  pc_connection_enabled?: boolean;
+  auto_capitalize?: boolean;
+  paragraph_breaks?: boolean;
+  number_formatting?: boolean;
+  smart_quotes?: boolean;
+}
+
+export interface TranscriptionHistoryItem {
+  id: string;
+  text: string;
+  profile_id: string;
+  profile_name: string;
+  timestamp: string;
+  word_count: number;
+  duration_seconds?: number;
+}
+
+// ─── API Service ───
 
 class ApiService {
   private baseUrl: string;
@@ -33,7 +94,13 @@ class ApiService {
     console.log('API Base URL:', this.baseUrl);
   }
 
-  async transcribeAudio(audioUri: string, fileType: string = 'wav'): Promise<TranscriptionResponse> {
+  // ── Transcription ──
+
+  async transcribeAudio(
+    audioUri: string,
+    fileType: string = 'wav',
+    profileId?: string,
+  ): Promise<TranscriptionResponse> {
     try {
       const formData = new FormData();
       formData.append('audio', {
@@ -41,6 +108,10 @@ class ApiService {
         type: `audio/${fileType}`,
         name: `recording.${fileType}`,
       } as any);
+
+      if (profileId) {
+        formData.append('profile_id', profileId);
+      }
 
       const response = await fetch(`${this.baseUrl}/transcribe`, {
         method: 'POST',
@@ -64,6 +135,8 @@ class ApiService {
       };
     }
   }
+
+  // ── Voice Commands ──
 
   async getVoiceCommands(): Promise<VoiceCommand[]> {
     try {
@@ -105,13 +178,13 @@ class ApiService {
 
   async initDefaultCommands(): Promise<void> {
     try {
-      await fetch(`${this.baseUrl}/voice-commands/init-defaults`, {
-        method: 'POST',
-      });
+      await fetch(`${this.baseUrl}/voice-commands/init-defaults`, { method: 'POST' });
     } catch (error) {
       console.error('Error initializing default commands:', error);
     }
   }
+
+  // ── Legacy Settings ──
 
   async getSettings(): Promise<AppSettings | null> {
     try {
@@ -139,6 +212,162 @@ class ApiService {
     }
   }
 
+  // ── Profiles ──
+
+  async getProfiles(): Promise<Profile[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profiles`);
+      if (!response.ok) throw new Error('Failed to fetch profiles');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching profiles:', error);
+      return [];
+    }
+  }
+
+  async getActiveProfile(): Promise<Profile | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profiles/active`);
+      if (!response.ok) throw new Error('Failed to fetch active profile');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching active profile:', error);
+      return null;
+    }
+  }
+
+  async createProfile(profile: ProfileCreate): Promise<Profile | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profiles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      if (!response.ok) throw new Error('Failed to create profile');
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      return null;
+    }
+  }
+
+  async updateProfile(profileId: string, update: ProfileUpdate): Promise<Profile | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profiles/${profileId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(update),
+      });
+      if (!response.ok) throw new Error('Failed to update profile');
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      return null;
+    }
+  }
+
+  async activateProfile(profileId: string): Promise<Profile | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profiles/${profileId}/activate`, {
+        method: 'PUT',
+      });
+      if (!response.ok) throw new Error('Failed to activate profile');
+      return await response.json();
+    } catch (error) {
+      console.error('Error activating profile:', error);
+      return null;
+    }
+  }
+
+  async deleteProfile(profileId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profiles/${profileId}`, {
+        method: 'DELETE',
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      return false;
+    }
+  }
+
+  // ── Transcription History ──
+
+  async getHistory(limit: number = 50): Promise<TranscriptionHistoryItem[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/history?limit=${limit}`);
+      if (!response.ok) throw new Error('Failed to fetch history');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching history:', error);
+      return [];
+    }
+  }
+
+  async saveToHistory(
+    text: string,
+    profileId: string = '',
+    profileName: string = 'Default',
+    durationSeconds?: number,
+  ): Promise<TranscriptionHistoryItem | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          profile_id: profileId,
+          profile_name: profileName,
+          duration_seconds: durationSeconds,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save to history');
+      return await response.json();
+    } catch (error) {
+      console.error('Error saving to history:', error);
+      return null;
+    }
+  }
+
+  async updateHistoryItem(itemId: string, text: string): Promise<TranscriptionHistoryItem | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/history/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!response.ok) throw new Error('Failed to update history item');
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating history item:', error);
+      return null;
+    }
+  }
+
+  async deleteHistoryItem(itemId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/history/${itemId}`, {
+        method: 'DELETE',
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error deleting history item:', error);
+      return false;
+    }
+  }
+
+  async clearHistory(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/history`, { method: 'DELETE' });
+      return response.ok;
+    } catch (error) {
+      console.error('Error clearing history:', error);
+      return false;
+    }
+  }
+
+  // ── PC Connection ──
+
   async getConnectedPCs(): Promise<{ count: number; client_ids: string[] }> {
     try {
       const response = await fetch(`${this.baseUrl}/connected-pcs`);
@@ -155,10 +384,7 @@ class ApiService {
       const response = await fetch(`${this.baseUrl}/send-to-pc/${clientId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          command_type: commandType,
-          payload: payload,
-        }),
+        body: JSON.stringify({ command_type: commandType, payload }),
       });
       return response.ok;
     } catch (error) {
@@ -172,10 +398,7 @@ class ApiService {
       const response = await fetch(`${this.baseUrl}/broadcast-to-pcs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          command_type: commandType,
-          payload: payload,
-        }),
+        body: JSON.stringify({ command_type: commandType, payload }),
       });
       return response.ok;
     } catch (error) {
@@ -197,4 +420,3 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
-export type { TranscriptionResponse, VoiceCommand, AppSettings };
