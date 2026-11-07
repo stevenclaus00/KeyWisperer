@@ -11,7 +11,7 @@ import copy
 import re
 from dataclasses import dataclass
 
-from ..contracts import Action, CommandSpec, PressKeys, SetListening, UndoLast
+from ..contracts import Action, CommandSpec, PressKeys, ReadBack, SetListening, UndoLast
 
 ENTER = PressKeys(["enter"])
 # Phrases that may also appear at the END of an utterance.
@@ -45,6 +45,7 @@ def default_commands() -> list[CommandSpec]:
         CommandSpec(["backspace"], keys("backspace")),
         CommandSpec(["stop listening"], [SetListening(False)]),
         CommandSpec(["start listening"], [SetListening(True)]),
+        CommandSpec(["read it back", "read that back", "read back"], [ReadBack()]),
     ]
 
 

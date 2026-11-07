@@ -5,10 +5,10 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 
 from .contracts import (
-    Action, Output, PressKeys, SetListening, TextProcessor, Transcriber, TypeText, UndoLast,
+    Action, Output, PressKeys, ReadBack, SetListening, TextProcessor, Transcriber, TypeText, UndoLast,
 )
 
 log = logging.getLogger(__name__)
@@ -22,11 +22,14 @@ class Pipeline:
     """Queue of utterances processed one at a time by a single worker."""
 
     def __init__(self, transcriber: Transcriber, processor: TextProcessor, output: Output,
-                 on_event: Callable[[Event], Any] | None = None):
+                 on_event: Callable[[Event], Any] | None = None,
+                 reader: Callable[[], Awaitable[str]] | None = None):
         self.transcriber = transcriber
         self.processor = processor
         self.output = output
         self.on_event = on_event
+        self.reader = reader  # async () -> text to speak; None = read-back unavailable
+        self._readbacks: set[asyncio.Task] = set()
         self.listening = True
         self.chunks: list[str] = []  # typed since the last "enter"
         self._queue: asyncio.Queue[bytes | None] = asyncio.Queue()
@@ -47,6 +50,8 @@ class Pipeline:
             await self._queue.put(None)
             await self._worker
             self._worker = None
+        if self._readbacks:
+            await asyncio.gather(*self._readbacks, return_exceptions=True)
 
     def submit(self, pcm: bytes) -> None:
         """Queue one utterance for transcription."""
@@ -109,6 +114,24 @@ class Pipeline:
                 if a.listening != self.listening:
                     self.listening = a.listening
                     await self._emit(self.status_event())
+            elif isinstance(a, ReadBack):
+                # Separate task so slow screenshot/vision calls never block dictation.
+                task = asyncio.create_task(self._read_back())
+                self._readbacks.add(task)
+                task.add_done_callback(self._readbacks.discard)
+
+    async def _read_back(self) -> None:
+        if self.reader is None:
+            await self._emit({"type": "error", "message": "read-back is not configured"})
+            return
+        await self._emit({"type": "status_message", "text": "Reading back…"})
+        try:
+            text = await self.reader()
+        except Exception as e:
+            log.exception("read-back failed")
+            await self._emit({"type": "error", "message": f"read-back failed: {str(e) or type(e).__name__}"})
+            return
+        await self._emit({"type": "speak", "text": text})
 
     def status_event(self) -> Event:
         return {"type": "status", "listening": self.listening, "connected": True}

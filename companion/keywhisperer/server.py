@@ -10,7 +10,7 @@ from urllib.parse import parse_qs, urlparse
 
 import websockets
 
-from .contracts import Action, PressKeys, SetListening, UndoLast
+from .contracts import Action, PressKeys, ReadBack, SetListening, UndoLast
 from .segmenter import Segmenter
 
 log = logging.getLogger(__name__)
@@ -22,6 +22,7 @@ CONTROL_ACTIONS: dict[str, Callable[[], Action]] = {
     "undo": lambda: UndoLast(),
     "pause": lambda: SetListening(False),
     "resume": lambda: SetListening(True),
+    "readback": lambda: ReadBack(),
 }
 
 

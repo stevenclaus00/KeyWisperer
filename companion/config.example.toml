@@ -1,6 +1,19 @@
 # KeyWhisperer config. Copy to ~/.config/keywhisperer/config.toml
 # Every key is optional; the values shown are the defaults.
 
+[ai]
+# One OpenAI-compatible endpoint for every AI call (transcription, read-back).
+base_url = ""               # "" = official OpenAI API
+# base_url = "http://localhost:4000"   # e.g. a local LiteLLM proxy; then set the
+#                                      # model names below to what the proxy exposes
+api_key_env = "OPENAI_API_KEY"   # NAME of the env var holding the key (not the key)
+
+[readback]
+enabled = true
+model = "gpt-4o-mini"       # any cheap vision model works; change it if your provider names it differently
+max_chars = 4000            # longest reply that will be spoken
+screenshot_command = ""     # "" = xdg-desktop-portal (GNOME Wayland); else a command that writes PNG to stdout, e.g. "grim -"
+
 [server]
 host = "0.0.0.0"   # listen on all interfaces so the phone can reach you
 port = 8765

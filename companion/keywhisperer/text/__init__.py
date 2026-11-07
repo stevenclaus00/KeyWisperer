@@ -10,6 +10,7 @@ from ..contracts import (
     CommandSpec,
     FormatOptions,
     PressKeys,
+    ReadBack,
     SetListening,
     TextProcessor,
     TypeText,
@@ -31,6 +32,8 @@ def parse_action(spec: dict[str, Any]) -> Action:
         return UndoLast()
     if kind == "listening":
         return SetListening(bool(spec["value"]))
+    if kind == "readback":
+        return ReadBack()
     raise ValueError(f"unknown action type: {kind!r} in {spec!r}")
 
 

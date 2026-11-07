@@ -1,4 +1,4 @@
-"""Command line entry point: keywhisperer run | pair | test-wav."""
+"""Command line entry point: keywhisperer run | pair | test-wav | readback-test | doctor."""
 
 from __future__ import annotations
 
@@ -27,6 +27,10 @@ def build_parser() -> argparse.ArgumentParser:
                      help="output backend (overrides config)")
     pair = sub.add_parser("pair", help="print the pairing URI and QR code")
     pair.add_argument("--config")
+    rb = sub.add_parser("readback-test", help="take a screenshot and print the extracted AI reply")
+    rb.add_argument("--config")
+    doc = sub.add_parser("doctor", help="check the desktop setup, API key and dependencies")
+    doc.add_argument("--config")
     tw = sub.add_parser("test-wav", help="transcribe a 16 kHz mono WAV and print actions (no typing)")
     tw.add_argument("file")
     tw.add_argument("--config")
@@ -41,12 +45,17 @@ async def run_server(cfg: Config, backend: str) -> None:
     server_box: list[AudioServer] = []
 
     async def on_event(event: dict) -> None:
-        if event["type"] in ("utterance", "typed", "error"):
+        if event["type"] in ("utterance", "typed", "error", "speak", "status_message"):
             logging.getLogger("keywhisperer").info("%s: %s", event["type"], event.get("text") or event.get("message"))
         await server_box[0].send_event(event)
 
-    pipeline = Pipeline(build_transcriber(cfg.transcription), build_processor(cfg.processor_config()),
-                        build_output(backend, {}), on_event)
+    reader = None
+    if cfg.readback.enabled:
+        from .readback import build_reader
+
+        reader = build_reader(cfg)
+    pipeline = Pipeline(build_transcriber(cfg.transcription, cfg.ai), build_processor(cfg.processor_config()),
+                        build_output(backend, {}), on_event, reader=reader)
     server = AudioServer(
         load_or_create_token(),
         make_segmenter=lambda: Segmenter(cfg.segmenter),
@@ -67,6 +76,29 @@ async def run_server(cfg: Config, backend: str) -> None:
         await pipeline.stop()
 
 
+async def readback_test(cfg: Config) -> None:
+    from .readback import build_reader
+
+    print("Taking a screenshot (GNOME may ask for permission the first time)...")
+    print(await build_reader(cfg)())
+
+
+def doctor(cfg: Config) -> None:
+    from .ai import api_key_present
+    from .output import check_environment
+
+    print(check_environment().format())
+    key_ok = api_key_present(cfg.ai)
+    print(f"API key env var {cfg.ai.api_key_env}: {'set' if key_ok else 'NOT set'}"
+          + ("" if key_ok or not cfg.ai.base_url else " (ok: a dummy key is used with a custom base_url)"))
+    print(f"AI endpoint: {cfg.ai.base_url or 'official OpenAI API'}")
+    try:
+        import dbus_next  # noqa: F401
+        print("dbus-next: importable")
+    except ImportError:
+        print("dbus-next: MISSING (pip install dbus-next); read-back screenshots need it")
+
+
 async def test_wav(cfg: Config, path: str) -> None:
     from .text import build_processor
 
@@ -76,7 +108,7 @@ async def test_wav(cfg: Config, path: str) -> None:
         pcm = w.readframes(w.getnframes())
     seg = Segmenter(cfg.segmenter)
     utterances = seg.feed(pcm + b"\x00" * (SAMPLE_RATE * 2)) + seg.flush()  # pad 1 s silence
-    transcriber = build_transcriber(cfg.transcription)
+    transcriber = build_transcriber(cfg.transcription, cfg.ai)
     processor = build_processor(cfg.processor_config())
     previous = ""
     print(f"{len(utterances)} utterance(s) found")
@@ -99,6 +131,10 @@ def main(argv: list[str] | None = None) -> None:
             print_pairing(cfg.server.port)
         elif args.cmd == "run":
             asyncio.run(run_server(cfg, args.output or cfg.output.backend))
+        elif args.cmd == "readback-test":
+            asyncio.run(readback_test(cfg))
+        elif args.cmd == "doctor":
+            doctor(cfg)
         elif args.cmd == "test-wav":
             asyncio.run(test_wav(cfg, args.file))
     except KeyboardInterrupt:

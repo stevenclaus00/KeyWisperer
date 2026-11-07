@@ -53,7 +53,25 @@ class OutputConfig:
 
 
 @dataclass
+class AiConfig:
+    """Shared OpenAI-compatible endpoint used by every AI call."""
+
+    base_url: str = ""  # "" = official OpenAI API; e.g. "http://localhost:4000" for LiteLLM
+    api_key_env: str = "OPENAI_API_KEY"  # NAME of the env var holding the key
+
+
+@dataclass
+class ReadBackConfig:
+    enabled: bool = True
+    model: str = "gpt-4o-mini"  # any cheap vision model works
+    max_chars: int = 4000
+    screenshot_command: str = ""  # "" = xdg-desktop-portal; else a command writing PNG to stdout
+
+
+@dataclass
 class Config:
+    ai: AiConfig = field(default_factory=AiConfig)
+    readback: ReadBackConfig = field(default_factory=ReadBackConfig)
     server: ServerConfig = field(default_factory=ServerConfig)
     transcription: TranscriptionConfig = field(default_factory=TranscriptionConfig)
     segmenter: SegmenterConfig = field(default_factory=SegmenterConfig)
@@ -85,7 +103,7 @@ def load_config(path: str | Path | None = None) -> Config:
         return cfg
     with open(p, "rb") as f:
         data = tomllib.load(f)
-    for section in ("server", "transcription", "segmenter", "output", "format"):
+    for section in ("ai", "readback", "server", "transcription", "segmenter", "output", "format"):
         if section in data:
             _fill(getattr(cfg, section), data[section], section)
     cfg.commands = list(data.get("commands", []))

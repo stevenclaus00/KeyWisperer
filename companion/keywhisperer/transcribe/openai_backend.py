@@ -20,14 +20,15 @@ def pcm_to_wav(pcm: bytes, sample_rate: int) -> bytes:
 
 
 class OpenAITranscriber:
-    """Uses the OpenAI audio API. Reads OPENAI_API_KEY from the environment."""
+    """Uses the OpenAI audio API. Pass a client from keywhisperer.ai.make_client."""
 
     def __init__(self, model: str = "whisper-1", language: str = "en",
                  vocabulary: list[str] | None = None, client=None):
         if client is None:
-            import openai
+            from ..ai import make_client
+            from ..config import AiConfig
 
-            client = openai.AsyncOpenAI()
+            client = make_client(AiConfig())
         self.client = client
         self.model = model
         self.language = language

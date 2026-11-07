@@ -51,8 +51,9 @@ Phone to companion:
 - **Binary frames**: raw 16 kHz, mono, 16-bit little-endian PCM, any frame size.
 - **Text frames (JSON)**:
   - `{"type":"hello","device":"<name>"}`
-  - `{"type":"control","action":"send"|"undo"|"pause"|"resume"}`
-    (send = press Enter, undo = remove last typed chunk, pause/resume = stop/start acting on speech)
+  - `{"type":"control","action":"send"|"undo"|"pause"|"resume"|"readback"}`
+    (send = press Enter, undo = remove last typed chunk, pause/resume = stop/start acting on speech,
+    readback = read the latest AI reply on screen aloud)
 
 Companion to phone (JSON text frames):
 
@@ -60,10 +61,53 @@ Companion to phone (JSON text frames):
 - `{"type":"utterance","text":"<raw transcript>"}`
 - `{"type":"typed","text":"<what was typed>"}`
 - `{"type":"error","message":"..."}`
+- `{"type":"status_message","text":"Reading back…"}` (progress note to show the user)
+- `{"type":"speak","text":"..."}` (the phone should speak this with Android text-to-speech)
+
+## Read-back
+
+Say "read it back" / "read that back" / "read back" (as the whole utterance), or press the
+read-back button in the app. The companion takes a screenshot, asks a vision model for the
+latest assistant reply, and sends it to the phone as a `speak` message. It runs in the
+background, so dictation keeps working. Failures arrive as `error` events.
+
+On GNOME Wayland the screenshot uses the xdg-desktop-portal (via `dbus-next`); GNOME may show
+a one-time permission prompt. On other desktops set `screenshot_command` (e.g. `grim -`).
+Try it at the desk with `keywhisperer readback-test`; check your setup with `keywhisperer doctor`.
+
+## Configuration: `[ai]` and `[readback]`
+
+```toml
+[ai]
+base_url = ""                    # "" = official OpenAI API
+api_key_env = "OPENAI_API_KEY"   # name of the env var that holds the key
+
+[readback]
+enabled = true
+model = "gpt-4o-mini"            # any cheap vision model; rename if your provider differs
+max_chars = 4000
+screenshot_command = ""          # "" = portal; else a command printing PNG to stdout
+```
+
+### Costs and keys
+
+- Whisper is billed per minute of audio.
+- Read-back is one small vision call each time you use it.
+- Phone text-to-speech is free.
+- A consumer chat subscription (ChatGPT Plus, Claude Pro, ...) is not the same as API access:
+  you need an API key with billing enabled from your provider.
+
+### LiteLLM or another OpenAI-compatible proxy
+
+Point `base_url` at the proxy (e.g. `http://localhost:4000`) and set `[transcription] model`
+and `[readback] model` to the model names the proxy exposes. If the proxy needs no key, leave
+the env var unset; a dummy key is sent.
 
 ## Layout
 
 - `segmenter.py` VAD-based utterance splitting (webrtcvad, energy fallback)
+- `ai.py` shared OpenAI-compatible client factory
+- `readback/` screenshot + vision extraction for read-back
 - `transcribe/` speech-to-text providers (add a provider = one file + one line in `__init__.py`)
 - `pipeline.py` ordered queue: transcribe, process text, run actions
 - `server.py`, `pairing.py`, `config.py`, `cli.py`
