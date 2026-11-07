@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "keywhisperer"
+version = "0.1.0"
+description = "Phone-as-mic dictation companion: transcribes speech and types it on your Linux desktop"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "websockets>=12",
+    "openai>=1.0",
+    "webrtcvad-wheels",
+    "numpy",
+    "qrcode",
+    "tomli; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio"]
+
+[project.scripts]
+keywhisperer = "keywhisperer.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["keywhisperer*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

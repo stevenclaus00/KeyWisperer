@@ -1,0 +1,35 @@
+# KeyWhisperer config. Copy to ~/.config/keywhisperer/config.toml
+# Every key is optional; the values shown are the defaults.
+
+[server]
+host = "0.0.0.0"   # listen on all interfaces so the phone can reach you
+port = 8765
+
+[transcription]
+provider = "openai"
+model = "whisper-1"
+language = "en"
+# Words/names Whisper should spell correctly (sent as a prompt hint).
+vocabulary = []    # e.g. ["Kubernetes", "KeyWhisperer"]
+
+[segmenter]
+silence_ms = 700          # silence that ends an utterance
+max_utterance_s = 25      # force-split very long speech
+min_speech_ms = 300       # drop utterances with less speech than this
+preroll_ms = 300          # audio kept before speech starts (avoids clipped syllables)
+vad_aggressiveness = 2    # 0 (permissive) .. 3 (strict)
+
+[output]
+backend = "clipboard"     # clipboard | ydotool | stdout
+
+[format]
+auto_capitalize = true
+number_formatting = true
+smart_quotes = false
+remove_fillers = true
+
+# Custom voice commands. Passed as-is to keywhisperer.text.build_processor;
+# see keywhisperer/text for the accepted fields.
+# [[commands]]
+# phrases = ["new paragraph"]
+# actions = [{type = "press_keys", keys = ["enter"], repeat = 2}]
