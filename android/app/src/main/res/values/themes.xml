@@ -1,0 +1,6 @@
+<resources>
+    <!-- Compose draws everything; this only sets the window behind it (dark). -->
+    <style name="Theme.KeyWhisperer" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#14181C</item>
+    </style>
+</resources>
