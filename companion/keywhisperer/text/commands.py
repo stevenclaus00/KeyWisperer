@@ -15,7 +15,7 @@ from ..contracts import Action, CommandSpec, PressKeys, SetListening, UndoLast
 
 ENTER = PressKeys(["enter"])
 # Phrases that may also appear at the END of an utterance.
-DEFAULT_TRAILING = ("send it", "send message", "send")
+DEFAULT_TRAILING = ("send it", "send message")  # bare "send" only fires as a whole utterance
 
 
 def normalize(text: str) -> str:
