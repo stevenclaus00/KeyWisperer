@@ -46,7 +46,12 @@ class SetListening:
     listening: bool
 
 
-Action = Union[TypeText, PressKeys, UndoLast, SetListening]
+@dataclass(frozen=True)
+class ReadBack:
+    """Read the latest AI reply on screen back to the user ("read it back")."""
+
+
+Action = Union[TypeText, PressKeys, UndoLast, SetListening, ReadBack]
 
 
 # ── Options ─────────────────────────────────────────────────────────────────
