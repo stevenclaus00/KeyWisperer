@@ -36,6 +36,8 @@ class TranscriptionConfig:
     model: str = "whisper-1"
     language: str = "en"
     vocabulary: list[str] = field(default_factory=list)
+    base_url: str = ""  # "" = use [ai].base_url
+    api_key_env: str = ""  # "" = use [ai].api_key_env
 
 
 @dataclass
@@ -66,6 +68,10 @@ class ReadBackConfig:
     model: str = "gpt-4o-mini"  # any cheap vision model works
     max_chars: int = 4000
     screenshot_command: str = ""  # "" = xdg-desktop-portal; else a command writing PNG to stdout
+    base_url: str = ""  # "" = use [ai].base_url
+    api_key_env: str = ""  # "" = use [ai].api_key_env
+    timeout_s: float = 90  # generous: a local server may need time to load the model
+    max_image_width: int = 1600  # downscale wider screenshots (needs Pillow); 0 = never
 
 
 @dataclass

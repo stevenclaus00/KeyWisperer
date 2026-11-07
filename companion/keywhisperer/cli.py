@@ -84,14 +84,17 @@ async def readback_test(cfg: Config) -> None:
 
 
 def doctor(cfg: Config) -> None:
-    from .ai import api_key_present
+    from .ai import check_endpoint, resolve_endpoint
     from .output import check_environment
 
     print(check_environment().format())
-    key_ok = api_key_present(cfg.ai)
-    print(f"API key env var {cfg.ai.api_key_env}: {'set' if key_ok else 'NOT set'}"
-          + ("" if key_ok or not cfg.ai.base_url else " (ok: a dummy key is used with a custom base_url)"))
-    print(f"AI endpoint: {cfg.ai.base_url or 'official OpenAI API'}")
+    t, r = cfg.transcription, cfg.readback
+    for label, feat, model in (("Transcription", t, t.model), ("Read-back", r, r.model)):
+        if feat is r and not r.enabled:
+            print("Read-back: disabled ([readback] enabled = false)")
+            continue
+        ep = resolve_endpoint(cfg.ai, feat.base_url, feat.api_key_env)
+        print("\n".join(check_endpoint(label, ep, model)))
     try:
         import dbus_next  # noqa: F401
         print("dbus-next: importable")

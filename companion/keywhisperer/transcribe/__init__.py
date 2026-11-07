@@ -13,7 +13,7 @@ def build_transcriber(config: TranscriptionConfig, ai: AiConfig | None = None) -
         from .openai_backend import OpenAITranscriber
 
         return OpenAITranscriber(config.model, config.language, config.vocabulary,
-                                 client=make_client(ai or AiConfig()))
+                                 client=make_client(ai or AiConfig(), config.base_url, config.api_key_env))
     raise ValueError(f"Unknown transcription provider: {config.provider!r}")
 
 

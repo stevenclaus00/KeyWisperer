@@ -7,11 +7,37 @@ base_url = ""               # "" = official OpenAI API
 # base_url = "http://localhost:4000"   # e.g. a local LiteLLM proxy; then set the
 #                                      # model names below to what the proxy exposes
 api_key_env = "OPENAI_API_KEY"   # NAME of the env var holding the key (not the key)
+# [transcription] and [readback] can each override base_url / api_key_env below.
+# Empty = use this [ai] section. A feature pointing at a different server does
+# not reuse [ai]'s key unless you name api_key_env for it (local servers need none).
+
+# ---- Local GPU server (Ollama + speaches), uncomment and edit <gpu-host> ----
+# Transcription: speaches (OpenAI-compatible Whisper server) on port 8000.
+#   [transcription]
+#   base_url = "http://<gpu-host>:8000/v1"
+#   model = "deepdml/faster-whisper-large-v3-turbo-ct2"   # int8 on Pascal (GTX 10xx) or newer
+#   # Same Whisper family as OpenAI's whisper-1. "Systran/faster-whisper-large-v3" is a bit
+#   # more accurate and needs more VRAM.
+# Read-back: Ollama on the instance that owns the big card (e.g. :11434).
+#   [readback]
+#   base_url = "http://<gpu-host>:11434/v1"
+#   model = "qwen2.5vl:7b"      # any Ollama vision model: gemma3, llama3.2-vision, ...
+#   timeout_s = 90              # first call can be slow while Ollama loads the model
+#   max_image_width = 1600      # downscale screenshots (needs: pip install -e '.[images]')
+# No spare GPU for read-back? A free OpenRouter vision model works too:
+#   [readback]
+#   base_url = "https://openrouter.ai/api/v1"
+#   api_key_env = "OPENROUTER_API_KEY"
+#   model = "<any free model with image input from openrouter.ai/models>"   # may be rate-limited
 
 [readback]
 enabled = true
 model = "gpt-4o-mini"       # any cheap vision model works; change it if your provider names it differently
 max_chars = 4000            # longest reply that will be spoken
+base_url = ""               # "" = use [ai]; e.g. "http://<gpu-host>:11434/v1" for Ollama
+api_key_env = ""            # "" = use [ai]
+timeout_s = 90              # request timeout; generous because local models load on first use
+max_image_width = 1600      # downscale wider screenshots before sending (needs Pillow); 0 = off
 screenshot_command = ""     # "" = xdg-desktop-portal (GNOME Wayland); else a command that writes PNG to stdout, e.g. "grim -"
 
 [server]
@@ -22,6 +48,8 @@ port = 8765
 provider = "openai"
 model = "whisper-1"
 language = "en"
+base_url = ""               # "" = use [ai]; e.g. "http://<gpu-host>:8000/v1" for speaches
+api_key_env = ""            # "" = use [ai]
 # Words/names Whisper should spell correctly (sent as a prompt hint).
 vocabulary = []    # e.g. ["Kubernetes", "KeyWhisperer"]
 

@@ -19,6 +19,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+images = ["Pillow"]
 dev = ["pytest", "pytest-asyncio"]
 
 [project.scripts]
