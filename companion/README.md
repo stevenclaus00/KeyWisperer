@@ -128,7 +128,14 @@ Whisper on GPU in int8 needs CUDA compute capability 6.1 or newer (Pascal and up
 cards such as a 4 GB Quadro K2200 (compute 5.0) would run float32 only and slowly, so they
 are not recommended for either job.
 
-1. Pull a vision model on the Ollama instance that owns the big card. With one instance per
+**Avoid model swapping:** if the big card already runs your everyday Ollama models, don't put
+the read-back vision model on it too, or Ollama will unload and reload models every time you
+switch between chatting and read-back. Recommended split: Whisper (speaches) stays loaded on
+the big card permanently (it is a separate process, not managed by Ollama), and read-back uses
+a free OpenRouter vision model (see `config.example.toml`), so it needs no GPU at all. Step 1
+below is only for a card with room to spare.
+
+1. (Optional) Pull a vision model on an Ollama instance with spare VRAM. With one instance per
    GPU, target the right one with `OLLAMA_HOST` (the instance's address and port):
 
 ```bash
